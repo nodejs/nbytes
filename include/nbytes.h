@@ -827,12 +827,12 @@ size_t SearchString(const char *haystack, size_t haystack_length,
 
 // ============================================================================
 // Version metadata
-#define NBYTES_VERSION "0.0.1"
+#define NBYTES_VERSION "0.1.0"
 
 enum {
   NBYTES_VERSION_MAJOR = 0,
-  NBYTES_VERSION_MINOR = 0,
-  NBYTES_VERSION_REVISION = 1,
+  NBYTES_VERSION_MINOR = 1,
+  NBYTES_VERSION_REVISION = 0,
 };
 
 }  // namespace nbytes
