@@ -93,9 +93,9 @@ void ForceAscii(const char *src, char *dst, size_t len);
 
 // Swaps bytes in place. nbytes is the number of bytes to swap and must be a
 // multiple of the word size (checked by function).
-bool SwapBytes16(void *data, size_t nbytes);
-bool SwapBytes32(void *data, size_t nbytes);
-bool SwapBytes64(void *data, size_t nbytes);
+bool SwapBytes16(char *data, size_t nbytes);
+bool SwapBytes32(char *data, size_t nbytes);
+bool SwapBytes64(char *data, size_t nbytes);
 
 // ============================================================================
 // Base64 (legacy)
