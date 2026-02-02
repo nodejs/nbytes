@@ -157,9 +157,7 @@ const int8_t unhex_table[256] = {
     -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1,
     -1, -1, -1, -1, -1, -1, -1, -1, -1};
 
-inline char nibble(uint8_t x) {
-  return x + '0' + ((x > 9) * 39);
-}
+inline char nibble(uint8_t x) { return x + '0' + ((x > 9) * 39); }
 
 size_t HexEncode(const char *src, size_t slen, char *dst, size_t dlen) {
   // We know how much we'll write, just make sure that there's space.
