@@ -3,7 +3,8 @@
     ".": {
       "release-type": "simple",
       "extra-files": [
-        "CMakeLists.txt"
+        "CMakeLists.txt",
+        "include/nbytes.h"
       ]
     }
   }
