@@ -1,5 +1,5 @@
 cmake_minimum_required(VERSION 3.28)
-project(nbytes VERSION 0.1.2)
+project(nbytes VERSION 0.1.2) # x-release-please-version
 
 set(CMAKE_CXX_STANDARD 20)
 set(CMAKE_CXX_STANDARD_REQUIRED True)
