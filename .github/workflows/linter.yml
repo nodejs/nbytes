@@ -27,7 +27,7 @@ jobs:
       - uses: actions/checkout@692973e3d937129bcbf40652eb9f2f61becf3332 # v4.1.7
 
       - name: Run clang-format
-        run: sudo apt update && apt search clang-format
+        run: sudo apt update && sudo apt install clang-format-17 && tools/run-clang-format.sh
 
       - uses: astral-sh/ruff-action@4919ec5cf1f49eff0871dbcea0da843445b837e6 # v3.6.1
         name: Lint with Ruff
