@@ -1,6 +1,6 @@
 # Changelog
 
-## [0.1.3](https://github.com/nodejs/nbytes/compare/v0.1.2...v0.1.3) (2026-02-11)
+## [0.1.3](https://github.com/nodejs/nbytes/compare/v0.1.2...v0.1.3) (2026-02-18)
 
 
 ### Bug Fixes
