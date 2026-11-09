@@ -3,6 +3,15 @@
 #include <cstddef>
 #include <string.h>
 
+#if defined(__ARM_NEON) || defined(_M_ARM64)
+#include <arm_neon.h>
+#define NBYTES_HEX_NEON 1
+#elif defined(__SSE2__) || defined(_M_X64) || \
+    (defined(_M_IX86_FP) && _M_IX86_FP >= 2)
+#include <emmintrin.h>
+#define NBYTES_HEX_SSE2 1
+#endif
+
 namespace nbytes {
 
 // ============================================================================
@@ -156,6 +165,72 @@ const int8_t unhex_table[256] = {
     -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1,
     -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1,
     -1, -1, -1, -1, -1, -1, -1, -1, -1};
+
+#if defined(NBYTES_HEX_NEON)
+namespace {
+inline bool HexDecodeBlock(const char *src, char *dst) {
+  const uint8x16x2_t c = vld2q_u8(reinterpret_cast<const uint8_t *>(src));
+  uint8x16_t nib[2];
+  uint8x16_t valid = vdupq_n_u8(0xFF);
+  for (int k = 0; k < 2; k++) {
+    const uint8x16_t d = vsubq_u8(c.val[k], vdupq_n_u8('0'));
+    const uint8x16_t l =
+        vsubq_u8(vorrq_u8(c.val[k], vdupq_n_u8(0x20)), vdupq_n_u8('a'));
+    const uint8x16_t is_digit = vcltq_u8(d, vdupq_n_u8(10));
+    const uint8x16_t is_alpha = vcltq_u8(l, vdupq_n_u8(6));
+    valid = vandq_u8(valid, vorrq_u8(is_digit, is_alpha));
+    nib[k] = vbslq_u8(is_digit, d, vaddq_u8(l, vdupq_n_u8(10)));
+  }
+  if (vminvq_u8(valid) == 0) return false;
+  vst1q_u8(reinterpret_cast<uint8_t *>(dst),
+           vorrq_u8(vshlq_n_u8(nib[0], 4), nib[1]));
+  return true;
+}
+}  // namespace
+#elif defined(NBYTES_HEX_SSE2)
+namespace {
+inline __m128i HexNibbles(__m128i c, int *mask) {
+  const __m128i d = _mm_sub_epi8(c, _mm_set1_epi8('0'));
+  const __m128i l =
+      _mm_sub_epi8(_mm_or_si128(c, _mm_set1_epi8(0x20)), _mm_set1_epi8('a'));
+  const __m128i is_digit = _mm_cmpeq_epi8(_mm_min_epu8(d, _mm_set1_epi8(9)), d);
+  const __m128i is_alpha = _mm_cmpeq_epi8(_mm_min_epu8(l, _mm_set1_epi8(5)), l);
+  *mask = _mm_movemask_epi8(_mm_or_si128(is_digit, is_alpha));
+  return _mm_or_si128(
+      _mm_and_si128(is_digit, d),
+      _mm_andnot_si128(is_digit, _mm_add_epi8(l, _mm_set1_epi8(10))));
+}
+
+inline __m128i HexPack(__m128i n) {
+  const __m128i hi = _mm_and_si128(n, _mm_set1_epi16(0x00FF));
+  const __m128i lo = _mm_srli_epi16(n, 8);
+  return _mm_or_si128(_mm_slli_epi16(hi, 4), lo);
+}
+
+inline bool HexDecodeBlock(const char *src, char *dst) {
+  int m0, m1;
+  const __m128i n0 =
+      HexNibbles(_mm_loadu_si128(reinterpret_cast<const __m128i *>(src)), &m0);
+  const __m128i n1 = HexNibbles(
+      _mm_loadu_si128(reinterpret_cast<const __m128i *>(src + 16)), &m1);
+  if ((m0 & m1) != 0xFFFF) return false;
+  _mm_storeu_si128(reinterpret_cast<__m128i *>(dst),
+                   _mm_packus_epi16(HexPack(n0), HexPack(n1)));
+  return true;
+}
+}  // namespace
+#endif
+
+size_t HexDecodeBlocks(char *buf, size_t len, const char *src, size_t srcLen) {
+  size_t i = 0;
+#if defined(NBYTES_HEX_NEON) || defined(NBYTES_HEX_SSE2)
+  const size_t n = std::min(len, srcLen / 2);
+  for (; i + 16 <= n; i += 16) {
+    if (!HexDecodeBlock(src + i * 2, buf + i)) break;
+  }
+#endif
+  return i;
+}
 
 inline constexpr char nibble(uint8_t x) {
   uint8_t add = (x >= 10) ? ('a' - 10) : '0';
