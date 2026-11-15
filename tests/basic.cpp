@@ -30,7 +30,7 @@ TEST(basic, swap_bytes64) {
 
 TEST(base64, decode_two_byte_ignores_non_latin1) {
   // U+4E2D has the low byte 0x2D ('-'); it must not decode as a base64 digit.
-  const char16_t input[] = u"QUJD中REVG";
+  const char16_t input[] = u"QUJD\u4E2DREVG";
   char out[16] = {};
   size_t n = nbytes::Base64Decode(out, sizeof(out), input, 9);
   EXPECT_EQ(std::string(out, n), "ABCDEF");
@@ -38,7 +38,7 @@ TEST(base64, decode_two_byte_ignores_non_latin1) {
 
 TEST(base64, decode_two_byte_does_not_stop_on_low_byte_padding) {
   // U+013D has the low byte 0x3D ('='); it must not end the decoding.
-  const char16_t input[] = u"QUJDĽREVG";
+  const char16_t input[] = u"QUJD\u013DREVG";
   char out[16] = {};
   size_t n = nbytes::Base64Decode(out, sizeof(out), input, 9);
   EXPECT_EQ(std::string(out, n), "ABCDEF");
@@ -47,7 +47,7 @@ TEST(base64, decode_two_byte_does_not_stop_on_low_byte_padding) {
 TEST(base64, decode_two_byte_all_non_latin1_is_empty) {
   // Four U+4E2D units form a full group in the fast path; the output must
   // still be empty rather than the bytes of "----".
-  const char16_t input[] = u"中中中中";
+  const char16_t input[] = u"\u4E2D\u4E2D\u4E2D\u4E2D";
   char out[16] = {};
   size_t n = nbytes::Base64Decode(out, sizeof(out), input, 4);
   EXPECT_EQ(n, 0u);
@@ -55,7 +55,7 @@ TEST(base64, decode_two_byte_all_non_latin1_is_empty) {
 
 TEST(hex, decode_two_byte_rejects_non_latin1) {
   // U+0141 has the low byte 0x41 ('A'); it is not a hex digit.
-  const char16_t input[] = u"ŁŁ";
+  const char16_t input[] = u"\u0141\u0141";
   char out[4] = {};
   size_t n = nbytes::HexDecode(out, sizeof(out), input, 2);
   EXPECT_EQ(n, 0u);
