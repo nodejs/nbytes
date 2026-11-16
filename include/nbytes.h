@@ -238,11 +238,21 @@ inline int8_t Unhex(TypeName c) {
   return unhex_table[static_cast<uint8_t>(c)];
 }
 
+namespace detail {
+size_t HexDecodeBlocks(char *buf, size_t len, const char *src, size_t srcLen);
+}  // namespace detail
+
 template <typename TypeName>
 static size_t HexDecode(char *buf, size_t len, const TypeName *src,
                         const size_t srcLen) {
-  size_t i;
-  for (i = 0; i < len && i * 2 + 1 < srcLen; ++i) {
+  size_t i = 0;
+  if constexpr (sizeof(TypeName) == 1) {
+    if (len >= 16 && srcLen >= 32) {
+      i = detail::HexDecodeBlocks(buf, len, reinterpret_cast<const char *>(src),
+                                  srcLen);
+    }
+  }
+  for (; i < len && i * 2 + 1 < srcLen; ++i) {
     unsigned a = Unhex(src[i * 2 + 0]);
     unsigned b = Unhex(src[i * 2 + 1]);
     if (!~a || !~b) return i;

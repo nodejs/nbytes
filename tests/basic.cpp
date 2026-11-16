@@ -60,3 +60,78 @@ TEST(hex, decode_two_byte_rejects_non_latin1) {
   size_t n = nbytes::HexDecode(out, sizeof(out), input, 2);
   EXPECT_EQ(n, 0u);
 }
+
+namespace {
+int RefUnhex(unsigned char c) {
+  if (c >= '0' && c <= '9') return c - '0';
+  if (c >= 'a' && c <= 'f') return c - 'a' + 10;
+  if (c >= 'A' && c <= 'F') return c - 'A' + 10;
+  return -1;
+}
+
+std::string RefHexDecode(const std::string &src, size_t len) {
+  std::string out;
+  for (size_t i = 0; i < len && i * 2 + 1 < src.size(); ++i) {
+    int a = RefUnhex(src[i * 2]);
+    int b = RefUnhex(src[i * 2 + 1]);
+    if (a < 0 || b < 0) break;
+    out.push_back(static_cast<char>((a << 4) | b));
+  }
+  return out;
+}
+
+std::string HexDecodeToString(const std::string &src, size_t len) {
+  std::vector<char> out(len + 1);
+  size_t n = nbytes::HexDecode(out.data(), len, src.data(), src.size());
+  return std::string(out.data(), n);
+}
+
+std::string RandomHex(size_t bytes, uint32_t &seed, bool upper) {
+  static const char lower_digits[] = "0123456789abcdef";
+  static const char upper_digits[] = "0123456789ABCDEF";
+  const char *digits = upper ? upper_digits : lower_digits;
+  std::string s;
+  for (size_t i = 0; i < bytes * 2; ++i) {
+    seed = seed * 1103515245 + 12345;
+    s.push_back(digits[(seed >> 16) & 15]);
+  }
+  return s;
+}
+}  // namespace
+
+TEST(hex, decode_matches_reference_for_all_lengths) {
+  uint32_t seed = 42;
+  for (size_t bytes = 0; bytes <= 160; ++bytes) {
+    for (bool upper : {false, true}) {
+      std::string src = RandomHex(bytes, seed, upper);
+      EXPECT_EQ(HexDecodeToString(src, bytes), RefHexDecode(src, bytes))
+          << "bytes=" << bytes << " upper=" << upper;
+    }
+  }
+}
+
+TEST(hex, decode_stops_at_every_invalid_byte_in_every_position) {
+  uint32_t seed = 7;
+  const std::string base = RandomHex(48, seed, false);
+  for (size_t pos = 0; pos < base.size(); ++pos) {
+    for (int v = 0; v < 256; ++v) {
+      std::string src = base;
+      src[pos] = static_cast<char>(v);
+      ASSERT_EQ(HexDecodeToString(src, 48), RefHexDecode(src, 48))
+          << "pos=" << pos << " byte=" << v;
+    }
+  }
+}
+
+TEST(hex, decode_respects_output_length_and_odd_input) {
+  uint32_t seed = 3;
+  const std::string src = RandomHex(64, seed, false);
+  for (size_t len = 0; len <= 64; ++len) {
+    EXPECT_EQ(HexDecodeToString(src, len), RefHexDecode(src, len));
+  }
+  for (size_t cut = 0; cut <= src.size(); ++cut) {
+    std::string odd = src.substr(0, cut);
+    EXPECT_EQ(HexDecodeToString(odd, 64), RefHexDecode(odd, 64))
+        << "cut=" << cut;
+  }
+}
