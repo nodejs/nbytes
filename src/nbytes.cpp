@@ -3,7 +3,7 @@
 #include <cstddef>
 #include <string.h>
 
-#if defined(__ARM_NEON) || defined(_M_ARM64)
+#if defined(__aarch64__) || defined(_M_ARM64)
 #include <arm_neon.h>
 #define NBYTES_HEX_NEON 1
 #elif defined(__SSE2__) || defined(_M_X64) || \
