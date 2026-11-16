@@ -1,4 +1,5 @@
 #include "nbytes.h"
+#include <algorithm>
 #include <cmath>
 #include <cstddef>
 #include <string.h>
