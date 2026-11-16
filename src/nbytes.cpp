@@ -222,6 +222,7 @@ inline bool HexDecodeBlock(const char *src, char *dst) {
 }  // namespace
 #endif
 
+namespace detail {
 size_t HexDecodeBlocks(char *buf, size_t len, const char *src, size_t srcLen) {
   size_t i = 0;
 #if defined(NBYTES_HEX_NEON) || defined(NBYTES_HEX_SSE2)
@@ -232,6 +233,7 @@ size_t HexDecodeBlocks(char *buf, size_t len, const char *src, size_t srcLen) {
 #endif
   return i;
 }
+}  // namespace detail
 
 inline constexpr char nibble(uint8_t x) {
   uint8_t add = (x >= 10) ? ('a' - 10) : '0';
